@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Docs Exporter</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --background: #fafafa;
+      --foreground: #0a0a0a;
+      --card: #ffffff;
+      --card-foreground: #0a0a0a;
+      --muted: #f4f4f5;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --primary: #18181b;
+      --primary-foreground: #fafafa;
+      --secondary: #f4f4f5;
+      --secondary-foreground: #18181b;
+      --radius: 0.5rem;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    header {
+      margin-bottom: 48px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: var(--muted-foreground);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 0;
+      color: var(--muted-foreground);
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--foreground);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--muted-foreground);
+    }
+
+    .empty-state-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin: 0 0 8px 0;
+      color: var(--foreground);
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .window-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .window-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--muted);
+    }
+
+    .window-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--foreground);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .window-badge {
+      background: var(--secondary);
+      color: var(--muted-foreground);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 9999px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: calc(var(--radius) - 2px);
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-foreground);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #27272a;
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: var(--secondary-foreground);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #e4e4e7;
+    }
+
+    .btn-icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    .doc-list {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      gap: 12px;
+    }
+
+    .doc-item:last-child {
+      border-bottom: none;
+    }
+
+    .doc-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--muted-foreground);
+    }
+
+    .doc-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--foreground);
+    }
+
+    .doc-filename {
+      color: var(--muted-foreground);
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    }
+
+    .download-status {
+      font-size: 12px;
+      color: var(--muted-foreground);
+      padding: 8px 20px;
+      background: var(--muted);
+      display: none;
+    }
+
+    .download-status.visible {
+      display: block;
+    }
+
+    .download-status.success {
+      color: #15803d;
+      background: #f0fdf4;
+    }
+
+    .download-status.error {
+      color: #dc2626;
+      background: #fef2f2;
+    }
+
+    .current-window-badge {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Google Docs exporter</h1>
+      <p class="subtitle">Export Google Docs from your open tabs as text files with comments</p>
+    </header>
+
+    <main id="main">
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>Scanning tabs...</span>
+      </div>
+    </main>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

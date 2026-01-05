@@ -1,11 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Google Docs Comment Exporter",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Download Google Docs as text files, including comments - single doc or batch export from all open tabs",
-  "permissions": ["activeTab", "tabs", "downloads"],
+  "permissions": ["tabs", "downloads"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icon16.png",
       "48": "icon48.png",
