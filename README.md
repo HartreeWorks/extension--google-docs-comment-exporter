@@ -10,7 +10,7 @@ A Chrome extension to download Google Docs as text files, including comments.
 
 ## Installation
 
-1. Download or clone this repository
+1. [Download](https://github.com/HartreeWorks/extension--google-docs-comment-exporter/archive/refs/heads/main.zip) or clone this repository
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable **Developer mode** (toggle in top right)
 4. Click **Load unpacked**
