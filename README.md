@@ -6,6 +6,7 @@ A Chrome extension to download Google Docs as text files, including comments.
 
 - **Download current doc** — One-click download when viewing a Google Doc
 - **Batch export** — Find all Google Docs across all open tabs and download them all at once
+- **Format selection** — Export as `docx`, `txt`, `md`, `pdf`, or `html`
 - Uses Google's native export endpoint, which includes resolved comments in the exported text
 
 ## Installation
@@ -19,10 +20,11 @@ A Chrome extension to download Google Docs as text files, including comments.
 ## Usage
 
 1. Click the extension icon in your toolbar
-2. If you're on a Google Doc, click **Download current doc** to export it
-3. To batch export, click **Find Google Docs in all tabs**, then **Download all**
+2. Choose an export format
+3. If you're on a Google Doc, click **Download current doc** to export it
+4. To batch export, click **Find Google Docs in all tabs**, then **Download all**
 
-Files are saved as `.txt` with sanitised filenames based on the document title.
+Files are saved with sanitised filenames based on the document title and the selected format.
 
 ## Requirements
 
@@ -31,7 +33,7 @@ Files are saved as `.txt` with sanitised filenames based on the document title.
 
 ## How it works
 
-The extension uses Google's built-in export endpoint (`/export?format=txt`) which returns the document as plain text. This endpoint includes resolved comments in the output.
+The extension uses Google's built-in export endpoint (`/export?format=...`) for each file type. Markdown uses `format=markdown`. The text export includes resolved comments; other formats use Google's standard export output.
 
 ## Permissions
 

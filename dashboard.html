@@ -249,13 +249,66 @@
       background: #dbeafe;
       color: #1d4ed8;
     }
+
+    .format-row {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted-foreground);
+    }
+
+    .format-label {
+      font-weight: 500;
+      color: var(--foreground);
+    }
+
+    .format-toggle {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 4px);
+      overflow: hidden;
+      background: var(--card);
+    }
+
+    .format-option {
+      border: none;
+      background: transparent;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .format-option:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
+
+    .format-option.is-active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <h1>Google Docs exporter</h1>
-      <p class="subtitle">Export Google Docs from your open tabs as text files with comments</p>
+      <p class="subtitle">Export Google Docs from your open tabs in your chosen format</p>
+      <div class="format-row" role="group" aria-label="Export format">
+        <span class="format-label">Export format</span>
+        <div class="format-toggle">
+          <button class="format-option is-active" type="button" data-format="txt" aria-pressed="true">TXT</button>
+          <button class="format-option" type="button" data-format="docx" aria-pressed="false">DOCX</button>
+          <button class="format-option" type="button" data-format="md" aria-pressed="false">MD</button>
+          <button class="format-option" type="button" data-format="pdf" aria-pressed="false">PDF</button>
+          <button class="format-option" type="button" data-format="html" aria-pressed="false">HTML</button>
+        </div>
+      </div>
     </header>
 
     <main id="main">

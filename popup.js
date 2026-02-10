@@ -21,9 +21,37 @@
       .replace(/\s/g, '-');
   }
 
-  async function downloadDoc(docId, title) {
-    const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
-    const filename = `${safeFilename(title, docId)}.txt`;
+  const EXPORT_FORMATS = {
+    txt: { label: 'TXT', param: 'txt', ext: 'txt' },
+    docx: { label: 'DOCX', param: 'docx', ext: 'docx' },
+    md: { label: 'MD', param: 'markdown', ext: 'md' },
+    pdf: { label: 'PDF', param: 'pdf', ext: 'pdf' },
+    html: { label: 'HTML', param: 'html', ext: 'html' }
+  };
+
+  function getSelectedFormat() {
+    const active = document.querySelector('.format-option.is-active');
+    const raw = active ? active.dataset.format : 'txt';
+    return EXPORT_FORMATS[raw] ? raw : 'txt';
+  }
+
+  function setSelectedFormat(formatKey) {
+    const normalized = EXPORT_FORMATS[formatKey] ? formatKey : 'txt';
+    document.querySelectorAll('.format-option').forEach(btn => {
+      const isActive = btn.dataset.format === normalized;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  }
+
+  function getFormatConfig(formatKey) {
+    return EXPORT_FORMATS[formatKey] || EXPORT_FORMATS.txt;
+  }
+
+  async function downloadDoc(docId, title, formatKey) {
+    const format = getFormatConfig(formatKey);
+    const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=${format.param}`;
+    const filename = `${safeFilename(title, docId)}.${format.ext}`;
 
     if (chrome.downloads && chrome.downloads.download) {
       await chrome.downloads.download({ url: exportUrl, filename, saveAs: false });
@@ -46,7 +74,7 @@
     const docId = getDocIdFromUrl(tab.url);
     if (!docId) throw new Error('Not a Google Doc');
 
-    return downloadDoc(docId, tab.title);
+    return downloadDoc(docId, tab.title, getSelectedFormat());
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -73,14 +101,14 @@
     return docs;
   }
 
-  async function downloadAllDocs(docs, statusEl) {
+  async function downloadAllDocs(docs, statusEl, formatKey) {
     let success = 0;
     let failed = 0;
 
     for (const doc of docs) {
       statusEl.textContent = `Downloading ${success + failed + 1} of ${docs.length}...`;
       try {
-        await downloadDoc(doc.id, doc.title);
+        await downloadDoc(doc.id, doc.title, formatKey);
         success++;
       } catch (err) {
         console.warn('Failed to download', doc.id, err);
@@ -89,6 +117,15 @@
     }
 
     return { success, failed };
+  }
+
+  function updateDocListExtensions(formatKey) {
+    const format = getFormatConfig(formatKey);
+    document.querySelectorAll('[data-doc-basename]').forEach(el => {
+      const base = el.dataset.docBasename || '';
+      if (!base) return;
+      el.textContent = `${base}.${format.ext}`;
+    });
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -102,6 +139,7 @@
     const docListEl = document.getElementById('doc-list');
     const downloadAllBtn = document.getElementById('download-all');
     const batchStatus = document.getElementById('batch-status');
+    const formatButtons = document.querySelectorAll('.format-option');
 
     let foundDocs = [];
 
@@ -155,9 +193,10 @@
           batchStatus.textContent = '';
         } else {
           docListEl.innerHTML = foundDocs.map(doc => {
-            const title = safeFilename(doc.title, doc.id);
-            return `<div class="doc-item" title="${doc.url}">${title}.txt</div>`;
+            const base = safeFilename(doc.title, doc.id);
+            return `<div class="doc-item" data-doc-basename="${base}" title="${doc.url}">${base}.txt</div>`;
           }).join('');
+          updateDocListExtensions(getSelectedFormat());
           docListEl.classList.remove('hidden');
           downloadAllBtn.classList.remove('hidden');
           downloadAllBtn.textContent = `Download all (${foundDocs.length})`;
@@ -179,7 +218,8 @@
       downloadAllBtn.disabled = true;
       findDocsBtn.disabled = true;
 
-      const { success, failed } = await downloadAllDocs(foundDocs, batchStatus);
+      const formatKey = getSelectedFormat();
+      const { success, failed } = await downloadAllDocs(foundDocs, batchStatus, formatKey);
 
       batchStatus.textContent = `Done: ${success} downloaded${failed > 0 ? `, ${failed} failed` : ''}`;
       batchStatus.className = failed > 0 ? 'status' : 'status success';
@@ -189,3 +229,9 @@
     });
   });
 })();
+    formatButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setSelectedFormat(btn.dataset.format);
+        updateDocListExtensions(getSelectedFormat());
+      });
+    });

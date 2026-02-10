@@ -24,9 +24,37 @@
     return (title || 'Untitled').replace(/\s*-\s*Google Docs\s*$/i, '').trim() || 'Untitled';
   }
 
-  async function downloadDoc(docId, title) {
-    const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
-    const filename = `${safeFilename(title, docId)}.txt`;
+  const EXPORT_FORMATS = {
+    txt: { label: 'TXT', param: 'txt', ext: 'txt' },
+    docx: { label: 'DOCX', param: 'docx', ext: 'docx' },
+    md: { label: 'MD', param: 'markdown', ext: 'md' },
+    pdf: { label: 'PDF', param: 'pdf', ext: 'pdf' },
+    html: { label: 'HTML', param: 'html', ext: 'html' }
+  };
+
+  function getSelectedFormat() {
+    const active = document.querySelector('.format-option.is-active');
+    const raw = active ? active.dataset.format : 'txt';
+    return EXPORT_FORMATS[raw] ? raw : 'txt';
+  }
+
+  function setSelectedFormat(formatKey) {
+    const normalized = EXPORT_FORMATS[formatKey] ? formatKey : 'txt';
+    document.querySelectorAll('.format-option').forEach(btn => {
+      const isActive = btn.dataset.format === normalized;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  }
+
+  function getFormatConfig(formatKey) {
+    return EXPORT_FORMATS[formatKey] || EXPORT_FORMATS.txt;
+  }
+
+  async function downloadDoc(docId, title, formatKey) {
+    const format = getFormatConfig(formatKey);
+    const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=${format.param}`;
+    const filename = `${safeFilename(title, docId)}.${format.ext}`;
 
     if (chrome.downloads && chrome.downloads.download) {
       await chrome.downloads.download({ url: exportUrl, filename, saveAs: false });
@@ -108,7 +136,7 @@
     `;
   }
 
-  function renderWindowCard(group, index) {
+  function renderWindowCard(group, index, extension) {
     const windowLabel = group.isCurrentWindow
       ? 'Current window'
       : `Window ${index + 1}`;
@@ -131,13 +159,16 @@
         </div>
         <div class="download-status" data-status-for="${group.windowId}"></div>
         <ul class="doc-list">
-          ${group.docs.map(doc => `
-            <li class="doc-item">
-              ${icons.doc}
-              <span class="doc-title">${escapeHtml(cleanTitle(doc.title))}</span>
-              <span class="doc-filename">${escapeHtml(safeFilename(doc.title, doc.id))}.txt</span>
-            </li>
-          `).join('')}
+          ${group.docs.map(doc => {
+            const base = safeFilename(doc.title, doc.id);
+            return `
+              <li class="doc-item">
+                ${icons.doc}
+                <span class="doc-title">${escapeHtml(cleanTitle(doc.title))}</span>
+                <span class="doc-filename" data-doc-basename="${base}">${escapeHtml(base)}.${extension}</span>
+              </li>
+            `;
+          }).join('')}
         </ul>
       </div>
     `;
@@ -151,6 +182,7 @@
 
   function render(windowGroups) {
     const main = document.getElementById('main');
+    const format = getFormatConfig(getSelectedFormat());
 
     if (windowGroups.length === 0) {
       main.innerHTML = renderEmptyState();
@@ -158,12 +190,21 @@
     }
 
     main.innerHTML = windowGroups
-      .map((group, index) => renderWindowCard(group, index))
+      .map((group, index) => renderWindowCard(group, index, format.ext))
       .join('');
 
     // Attach event listeners
     document.querySelectorAll('.download-window-btn').forEach(btn => {
       btn.addEventListener('click', handleDownloadWindow);
+    });
+  }
+
+  function updateFilenameExtensions(formatKey) {
+    const format = getFormatConfig(formatKey);
+    document.querySelectorAll('[data-doc-basename]').forEach(el => {
+      const base = el.dataset.docBasename || '';
+      if (!base) return;
+      el.textContent = `${base}.${format.ext}`;
     });
   }
 
@@ -177,6 +218,7 @@
     const btn = e.currentTarget;
     const windowId = parseInt(btn.dataset.windowId, 10);
     const group = windowGroupsData.find(g => g.windowId === windowId);
+    const formatKey = getSelectedFormat();
 
     if (!group) return;
 
@@ -197,7 +239,7 @@
       statusEl.textContent = `Downloading ${i + 1} of ${group.docs.length}...`;
 
       try {
-        await downloadDoc(doc.id, doc.title);
+        await downloadDoc(doc.id, doc.title, formatKey);
         success++;
         // Small delay between downloads to avoid rate limiting
         if (i < group.docs.length - 1) {
@@ -229,6 +271,13 @@
 
   async function init() {
     try {
+      document.querySelectorAll('.format-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setSelectedFormat(btn.dataset.format);
+          updateFilenameExtensions(getSelectedFormat());
+        });
+      });
+
       windowGroupsData = await getDocsGroupedByWindow();
       render(windowGroupsData);
     } catch (err) {

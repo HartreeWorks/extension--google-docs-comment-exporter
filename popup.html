@@ -94,10 +94,57 @@
     .hidden {
       display: none;
     }
+    .format-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .format-label {
+      font-size: 12px;
+      color: #555;
+      font-weight: 600;
+    }
+    .format-toggle {
+      display: inline-flex;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .format-option {
+      border: none;
+      background: transparent;
+      color: #666;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .format-option:hover {
+      background: #f1f3f4;
+      color: #333;
+    }
+    .format-option.is-active {
+      background: #1a73e8;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
   <h1>Google Docs Comment Exporter</h1>
+  <div class="format-row" role="group" aria-label="Export format">
+    <span class="format-label">Export format</span>
+    <div class="format-toggle">
+      <button class="format-option is-active" type="button" data-format="txt" aria-pressed="true">TXT</button>
+      <button class="format-option" type="button" data-format="docx" aria-pressed="false">DOCX</button>
+      <button class="format-option" type="button" data-format="md" aria-pressed="false">MD</button>
+      <button class="format-option" type="button" data-format="pdf" aria-pressed="false">PDF</button>
+      <button class="format-option" type="button" data-format="html" aria-pressed="false">HTML</button>
+    </div>
+  </div>
 
   <section id="current-doc-section">
     <button id="download-current" class="btn-primary">Download current doc</button>
