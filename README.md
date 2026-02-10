@@ -2,6 +2,8 @@
 
 A Chrome extension to download Google Docs as text files, including comments.
 
+![Screenshot](screenshot.jpeg)
+
 ## Features
 
 - **Download current doc** — One-click download when viewing a Google Doc
