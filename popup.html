@@ -81,6 +81,8 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      display: flex;
+      min-width: 0;
     }
     .doc-item:last-child {
       border-bottom: none;
@@ -93,6 +95,20 @@
     }
     .hidden {
       display: none;
+    }
+    .doc-filename {
+      display: flex;
+      min-width: 0;
+      width: 100%;
+    }
+    .doc-filename-base {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .doc-filename-ext {
+      flex: 0 0 auto;
     }
     .format-row {
       display: flex;

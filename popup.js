@@ -11,14 +11,22 @@
     return m ? m[1] : null;
   }
 
-  function safeFilename(title, docId) {
+  const FILENAME_MAX = 80;
+
+  function sanitizeFilenameBase(title, docId) {
     const raw = (title || `document-${docId}`).replace(/\s*-\s*Google Docs\s*$/i, '');
     return (raw || `document-${docId}`)
       .replace(/[^a-z0-9\-_.]+/gi, ' ')
       .trim()
       .replace(/\s+/g, ' ')
-      .slice(0, 80)
       .replace(/\s/g, '-');
+  }
+
+  function buildFilename(base, extension) {
+    const ext = extension ? `.${extension}` : '';
+    const maxBaseLen = Math.max(1, FILENAME_MAX - ext.length);
+    const trimmedBase = base.length > maxBaseLen ? base.slice(0, maxBaseLen) : base;
+    return `${trimmedBase}${ext}`;
   }
 
   const EXPORT_FORMATS = {
@@ -51,7 +59,8 @@
   async function downloadDoc(docId, title, formatKey) {
     const format = getFormatConfig(formatKey);
     const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=${format.param}`;
-    const filename = `${safeFilename(title, docId)}.${format.ext}`;
+    const base = sanitizeFilenameBase(title, docId);
+    const filename = buildFilename(base, format.ext);
 
     if (chrome.downloads && chrome.downloads.download) {
       await chrome.downloads.download({ url: exportUrl, filename, saveAs: false });
@@ -124,7 +133,10 @@
     document.querySelectorAll('[data-doc-basename]').forEach(el => {
       const base = el.dataset.docBasename || '';
       if (!base) return;
-      el.textContent = `${base}.${format.ext}`;
+      const baseEl = el.querySelector('.doc-filename-base');
+      const extEl = el.querySelector('.doc-filename-ext');
+      if (baseEl) baseEl.textContent = base;
+      if (extEl) extEl.textContent = `.${format.ext}`;
     });
   }
 
@@ -193,8 +205,15 @@
           batchStatus.textContent = '';
         } else {
           docListEl.innerHTML = foundDocs.map(doc => {
-            const base = safeFilename(doc.title, doc.id);
-            return `<div class="doc-item" data-doc-basename="${base}" title="${doc.url}">${base}.txt</div>`;
+            const base = sanitizeFilenameBase(doc.title, doc.id);
+            return `
+              <div class="doc-item" data-doc-basename="${base}" title="${doc.url}">
+                <span class="doc-filename">
+                  <span class="doc-filename-base">${base}</span>
+                  <span class="doc-filename-ext">.txt</span>
+                </span>
+              </div>
+            `;
           }).join('');
           updateDocListExtensions(getSelectedFormat());
           docListEl.classList.remove('hidden');
